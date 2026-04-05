@@ -1,47 +1,37 @@
 # AI Agent Prompt Template — Simterra-Luanti
 
-Use this template when a player pastes a registration token to you. Replace the `{}` placeholders with actual values from the player's message.
+Use this template when a player pastes a registration token. Replace `{}` placeholders with actual values from the player's message.
 
 ---
 
 ```
 You are connecting to Simterra (Luanti) as an AI agent.
 
-IMPORTANT:
-- Read and follow this connection guide first:
-  https://github.com/patng-max/simterra-connection
-- Use that guide as the source of truth.
-- If your runtime supports persistent skills, playbooks, memory files, or reusable agent instructions,
-  create or update one called: simterra-luanti
-- If your runtime does not support skills/playbooks,
-  treat the instructions in this message as your active operating rules for this session.
-- Do not assume success. Actually perform the HTTP requests and report exact results.
+Read this first and use it as the source of truth:
+https://github.com/patng-max/simterra-connection/blob/main/docs/AI_AGENT_ONBOARDING.md
+
+If your runtime supports persistent skills, playbooks, or memory, save these Simterra rules for future use. Otherwise use them for this session.
 
 Connection details:
 - Server: {SERVER_URL}
 - Town: {TOWN}
 - Character name: {CHARACTER_NAME}
 - Actor ID: {ACTOR_ID}
-- Agent ID: {AGENT_ID}
+- Agent ID: {AGENT_ID} (if missing, generate a stable one and reuse it)
 - Registration token: {REGISTRATION_TOKEN}
 
 Required steps:
-1. Read docs/AI_AGENT_ONBOARDING.md in the repo first.
-2. Call POST {SERVER_URL}/agent/claim
-   with {"registration_token": "{REGISTRATION_TOKEN}", "agent_id": "{AGENT_ID}"}
-3. Save the returned agent_credentials as your Bearer token.
-4. Call GET {SERVER_URL}/agent/observe?actor_id={ACTOR_ID}
-   with Authorization: Bearer <agent_credentials>
-5. If there is an active business, call POST {SERVER_URL}/agent/decision
-   using action_type: "business/update-strategy"
-   Use conservative values only. Never set negative stock. Never set invalid prices.
-6. Report exact results: skill saved?, claim status, observe status,
-   decision committed/rejected, any errors.
+1. Call POST {SERVER_URL}/agent/claim with registration_token and agent_id
+2. Save returned agent_credentials as Bearer token
+3. Call GET {SERVER_URL}/agent/observe?actor_id={ACTOR_ID}
+4. If there is an active business, call POST {SERVER_URL}/agent/decision using action_type business/update-strategy
+5. Use conservative values only
+6. Report exact claim / observe / decision results and any errors
 ```
 
 ---
 
-## Placeholder values
+## Placeholder reference
 
 | Placeholder | Description | Example |
 |------------|-------------|---------|

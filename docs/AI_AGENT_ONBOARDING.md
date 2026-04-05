@@ -1,6 +1,6 @@
 # AI Agent Onboarding — Simterra-Luanti
 
-This is the canonical reference for AI agents connecting to Simterra-Luanti. Read this before making any API calls.
+Canonical reference for AI agents connecting to Simterra-Luanti. Read this before making any API calls.
 
 ## Connection summary
 
@@ -34,7 +34,9 @@ Response:
 }
 ```
 
-**Save `agent_credentials` securely.** It expires in 24 hours. If it expires, the player must run `/simterra link` again to generate a fresh registration token.
+**Save `agent_credentials` securely.** It expires in 24 hours.
+
+**Choosing `agent_id`:** Use a stable identifier — the same agent should use the same `agent_id` across sessions. If the player did not provide one, generate one (e.g. `myagent-001`) and reuse it. The `agent_id` is not a secret.
 
 ---
 
@@ -66,13 +68,15 @@ Example response:
     "version": 3
   },
   "account": {
+    "account_id": "acc-xxx",
     "balance": "1000.00",
-    "currency": "TWD"
+    "currency": "TWD",
+    "version": 1
   }
 }
 ```
 
-**Always observe before making a decision.** Never assume the business state — the server is authoritative.
+**Always observe before making a decision.** The server state is authoritative.
 
 ---
 
@@ -80,7 +84,7 @@ Example response:
 
 ### Supported action: `business/update-strategy`
 
-Update prices and/or stock targets for your business.
+Update prices and/or stock targets.
 
 ```
 POST {server_url}/agent/decision
@@ -98,7 +102,7 @@ Content-Type: application/json
 }
 ```
 
-**Response — committed (CAS succeeded):**
+**Response — committed:**
 ```json
 {
   "success": true,
@@ -110,13 +114,13 @@ Content-Type: application/json
 }
 ```
 
-**Response — rejected (invalid input):**
+**Response — rejected:**
 ```json
 {
   "success": false,
   "data": {
     "status": "rejected",
-    "message": "Price rejected: tea $0.50 below template minimum $1.00"
+    "message": "Price rejected: tea $0.50 below minimum $1.00"
   }
 }
 ```
@@ -127,11 +131,11 @@ Content-Type: application/json
 
 | HTTP status | Code | Meaning | Action |
 |-------------|------|---------|--------|
-| 401 | `token_invalid` | Registration token is wrong or expired | Stop. Request fresh token from player. |
+| 401 | `token_invalid` | Registration token wrong or expired | Stop. Request fresh token from player. |
 | 401 | `unauthorized` | Bearer token missing or invalid | Stop. Request fresh registration. |
-| 403 | — | Actor ID mismatch | Check actor_id matches. Do not retry without new registration. |
-| 404 | — | Business or lot not found | Player may not have a business yet. Report clearly. |
-| 400 | — | Bad input (price, stock) | Fix values. Read template minimums from observe response. |
+| 403 | — | Actor ID mismatch | Do not retry without new registration. |
+| 404 | — | Business or lot not found | Report clearly — player may not have a business yet. |
+| 400 | — | Bad input (price, stock) | Fix values. See conservative rules below. |
 | 409 | — | CAS version conflict | Re-observe to get latest version, then retry. |
 
 **Never pretend a failed call succeeded.** Report exact errors to the player.
@@ -141,11 +145,11 @@ Content-Type: application/json
 ## Conservative decision rules
 
 1. **Always observe before acting.** Never decide without current state.
-2. **Small price changes only.** Move prices in increments of $0.50–$1.00 until you understand the market.
+2. **Use small price increments.** Move prices in steps of $0.50–$1.00. If the server rejects a price, never go lower than the rejected value — use it as the new floor.
 3. **Never set stock targets below 0.**
-4. **Never set prices below the template minimum cost.** Read the `default_prices` from your observe response — use those as floor.
-5. **Watch your balance.** Each decision costs nothing to submit but may trigger economy events.
-6. **Prefer gradual adjustments.** A series of small changes is better than one large gamble.
+4. **Watch your balance.** A low balance means the business is losing money.
+5. **Prefer gradual adjustments.** A series of small changes is safer than one large move.
+6. **If rejected, re-observe before retrying.** The business state may have changed.
 
 ---
 
@@ -153,11 +157,11 @@ Content-Type: application/json
 
 **If your runtime supports persistent skills, playbooks, or memory files:**
 
-Save these rules as `simterra-luanti` (or your preferred name). Reload them on each session. This avoids re-reading this doc on every connection.
+Save these rules as `simterra-luanti` (or your preferred name). Reload them on each session.
 
 **If your runtime does not support persistence:**
 
-Treat the rules in your prompt as active operating rules for this session. Re-read this doc if you reconnect with a new token.
+Treat these rules as active operating rules for this session. Re-read this doc if you reconnect with a new token.
 
 ---
 
